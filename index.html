@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ 名字バトル！</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#080818;color:#fff;
+  font-family:'Hiragino Kaku Gothic Pro','メイリオ',Arial,sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 30% 40%,#1a1040 0%,#080818 60%);
+  z-index:-2;
+}
+
+/* ===== STARS ===== */
+.stars{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.star{
+  position:absolute;border-radius:50%;
+  background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);
+}
+@keyframes twinkle{0%,100%{opacity:0.2}50%{opacity:1}}
+
+/* ===== SCREENS ===== */
+.screen{display:none;min-height:100vh;padding:20px;align-items:center;justify-content:center;flex-direction:column}
+.screen.active{display:flex;animation:fadeIn 0.4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== TITLE ===== */
+.title-main{
+  font-size:clamp(2.5em,8vw,5em);font-weight:900;text-align:center;letter-spacing:6px;
+  background:linear-gradient(135deg,#ffd700 0%,#ff8c00 50%,#ff3300 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:titleGlow 2s ease-in-out infinite;
+  filter:drop-shadow(0 0 30px rgba(255,200,0,0.5));
+}
+@keyframes titleGlow{0%,100%{filter:drop-shadow(0 0 20px rgba(255,200,0,0.4))}50%{filter:drop-shadow(0 0 50px rgba(255,150,0,0.8))}}
+.title-sub{color:#88aaff;text-align:center;margin-top:10px;letter-spacing:3px;font-size:clamp(0.8em,2vw,1.1em)}
+
+/* ===== BUTTONS ===== */
+.btn{
+  padding:14px 36px;font-size:1.1em;font-weight:bold;border:none;border-radius:50px;
+  cursor:pointer;transition:all 0.25s;letter-spacing:2px;display:inline-block;
+}
+.btn:active{transform:scale(0.96)}
+.btn-gold{
+  background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;
+  box-shadow:0 4px 20px rgba(255,200,0,0.4);
+}
+.btn-gold:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 30px rgba(255,200,0,0.7)}
+.btn-blue{
+  background:linear-gradient(135deg,#4488ff,#00ccff);color:#fff;
+  box-shadow:0 4px 20px rgba(68,136,255,0.4);
+}
+.btn-blue:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 30px rgba(68,136,255,0.7)}
+.btn-ghost{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2)}
+.btn-ghost:hover{background:rgba(255,255,255,0.2)}
+
+/* ===== CARD ===== */
+.card{
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px;padding:30px;width:100%;max-width:520px;
+  backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.card h2{font-size:1.4em;margin-bottom:20px;text-align:center}
+.step-label{color:#666;font-size:0.8em;letter-spacing:2px;text-align:center;margin-bottom:12px}
+
+/* ===== FORM ===== */
+input[type="text"],input[type="number"]{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  border-radius:10px;padding:11px 16px;color:#fff;font-size:1em;width:100%;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+  font-family:inherit;
+}
+input[type="text"]:focus,input[type="number"]:focus{
+  border-color:#ffd700;box-shadow:0 0 12px rgba(255,215,0,0.3);
+}
+.input-label{display:block;margin-bottom:6px;color:#aaa;font-size:0.88em}
+.input-group{margin-bottom:16px}
+.member-row{display:flex;gap:10px;margin-bottom:8px;align-items:center}
+.member-idx{width:48px;text-align:right;color:#666;font-size:0.85em;flex-shrink:0}
+
+/* ===== POWER REVEAL ===== */
+.reveal-wrap{width:100%;max-width:680px}
+.power-card{
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px;padding:16px 22px;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all 0.3s;
+}
+.power-card.active{
+  border-color:#ffd700;box-shadow:0 0 20px rgba(255,215,0,0.25);
+  animation:cardPulse 0.4s ease;
+}
+@keyframes cardPulse{0%{transform:scale(1)}50%{transform:scale(1.015)}100%{transform:scale(1)}}
+.pc-name{font-size:1.2em;font-weight:bold}
+.pc-team{font-size:0.8em;margin-top:3px}
+.pc-rank{font-size:0.78em;color:#666;margin-top:2px}
+.pc-power{
+  font-size:1.9em;font-weight:900;font-family:'Courier New',monospace;
+  min-width:130px;text-align:right;color:#ffd700;
+}
+
+/* ===== BATTLE ===== */
+.battle-wrap{width:100%;max-width:820px;text-align:center}
+.teams-row{display:flex;justify-content:center;align-items:center;gap:16px;margin:24px 0}
+.team-box{
+  flex:1;max-width:280px;padding:22px;border-radius:18px;
+  transition:transform 0.15s,box-shadow 0.15s;
+}
+.team-box.shake{animation:shake 0.35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(8px)}}
+.team-box.t1{background:rgba(255,80,80,0.12);border:2px solid rgba(255,80,80,0.5)}
+.team-box.t2{background:rgba(80,120,255,0.12);border:2px solid rgba(80,120,255,0.5)}
+.team-box-name{font-weight:bold;font-size:1.05em;margin-bottom:6px}
+.team-box-power{font-size:2.2em;font-weight:900;font-family:'Courier New',monospace}
+.vs-badge{
+  font-size:1.8em;font-weight:900;color:#ffd700;
+  text-shadow:0 0 20px #ffd700;
+  animation:vsPop 0.6s ease-in-out infinite alternate;
+  flex-shrink:0;
+}
+@keyframes vsPop{from{transform:scale(1)}to{transform:scale(1.15)}}
+
+.hp-wrap{margin:10px 0}
+.hp-bar-bg{
+  width:100%;height:16px;background:rgba(255,255,255,0.08);
+  border-radius:8px;overflow:hidden;
+}
+.hp-bar-fill{height:100%;border-radius:8px;transition:width 0.5s ease}
+.hp-fill-t1{background:linear-gradient(90deg,#cc0000,#ff6b6b)}
+.hp-fill-t2{background:linear-gradient(90deg,#0044cc,#6b9eff)}
+.hp-label{font-size:0.78em;color:#888;margin-top:4px}
+
+.battle-log{
+  background:rgba(0,0,0,0.35);border-radius:14px;padding:18px 22px;
+  margin:18px 0;min-height:160px;max-height:260px;overflow-y:auto;
+  text-align:left;font-family:'Courier New',monospace;font-size:0.92em;line-height:1.9;
+  border:1px solid rgba(255,255,255,0.07);
+}
+.log-line{animation:logIn 0.25s ease}
+@keyframes logIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== VICTORY ===== */
+.victory-wrap{text-align:center;position:relative;z-index:1}
+.victory-title{
+  font-size:clamp(2em,7vw,3.5em);font-weight:900;
+  animation:victoryPop 0.7s ease-in-out infinite alternate;
+}
+@keyframes victoryPop{from{transform:scale(1)}to{transform:scale(1.06)}}
+.fireworks-canvas{position:fixed;inset:0;pointer-events:none;z-index:0}
+
+.final-table{
+  background:rgba(255,255,255,0.05);border-radius:14px;
+  padding:20px 28px;margin:20px auto;max-width:420px;
+  display:flex;justify-content:space-around;align-items:center;
+}
+.final-col{text-align:center}
+.final-col-name{font-weight:bold;margin-bottom:6px}
+.final-col-power{font-size:1.4em;font-family:'Courier New',monospace;font-weight:900}
+
+/* ===== FLASH ===== */
+.flash-overlay{
+  position:fixed;inset:0;background:#fff;pointer-events:none;
+  z-index:200;opacity:0;transition:opacity 0.08s;
+}
+
+/* ===== COLOR CLASSES ===== */
+.c-red{color:#ff6b6b}.c-blue{color:#6b9eff}.c-gold{color:#ffd700}.c-gray{color:#888}
+</style>
+</head>
+<body>
+
+<div class="flash-overlay" id="flash"></div>
+<canvas class="fireworks-canvas" id="fwCanvas"></canvas>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- ===================== SCREEN: TITLE ===================== -->
+<div class="screen active" id="s-title">
+  <div style="text-align:center">
+    <div style="font-size:2.5em;margin-bottom:6px">⚡</div>
+    <div class="title-main">名字バトル！</div>
+    <div class="title-sub">〜 全国苗字ランキング戦闘力決定戦 〜</div>
+    <div style="margin-top:18px;color:#555;font-size:0.82em;line-height:1.7">
+      名字の希少度がそのまま戦闘力に！<br>
+      珍しい名字ほど強い！果たして勝つのは…？
+    </div>
+    <div style="margin-top:8px;color:#444;font-size:0.75em">
+      ※ 全国苗字ランキングデータ（公開順位情報）を使用
+    </div>
+  </div>
+  <button class="btn btn-gold" style="margin-top:40px" onclick="show('s-setup')">
+    ⚔️ バトル開始！
+  </button>
+</div>
+
+<!-- ===================== SCREEN: SETUP ===================== -->
+<div class="screen" id="s-setup">
+  <div class="card">
+    <div class="step-label">STEP 1 / 3 — チーム設定</div>
+    <h2>⚙️ チーム設定</h2>
+
+    <div class="input-group">
+      <label class="input-label">🔴 チーム１の名前</label>
+      <input type="text" id="t1name" value="チーム赤" maxlength="12">
+    </div>
+    <div class="input-group">
+      <label class="input-label">🔵 チーム２の名前</label>
+      <input type="text" id="t2name" value="チーム青" maxlength="12">
+    </div>
+    <div class="input-group">
+      <label class="input-label">各チームの人数</label>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:4px">
+        <button class="btn btn-ghost" style="padding:8px 18px;font-size:1.2em" onclick="chgCnt(-1)">－</button>
+        <span id="cntDisp" style="font-size:1.6em;font-weight:bold;min-width:32px;text-align:center">3</span>
+        <button class="btn btn-ghost" style="padding:8px 18px;font-size:1.2em" onclick="chgCnt(1)">＋</button>
+        <span style="color:#666;font-size:0.85em">人（最大6）</span>
+      </div>
+    </div>
+
+    <button class="btn btn-gold" style="width:100%;margin-top:10px" onclick="goInput(1)">
+      次へ → チーム１ メンバー入力
+    </button>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: TEAM1 INPUT ===================== -->
+<div class="screen" id="s-t1input">
+  <div class="card">
+    <div class="step-label">STEP 2 / 3 — メンバー入力</div>
+    <h2 class="c-red">🔴 <span id="t1nameH"></span> のメンバー</h2>
+    <p style="color:#888;font-size:0.85em;text-align:center;margin:10px 0 18px">名字（苗字）を入力してください</p>
+    <div id="t1inputs"></div>
+    <button class="btn btn-gold" style="width:100%;margin-top:16px" onclick="goInput(2)">
+      次へ → チーム２ メンバー入力
+    </button>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: TEAM2 INPUT ===================== -->
+<div class="screen" id="s-t2input">
+  <div class="card">
+    <div class="step-label">STEP 3 / 3 — メンバー入力</div>
+    <h2 class="c-blue">🔵 <span id="t2nameH"></span> のメンバー</h2>
+    <p style="color:#888;font-size:0.85em;text-align:center;margin:10px 0 18px">名字（苗字）を入力してください</p>
+    <div id="t2inputs"></div>
+    <button class="btn btn-blue" style="width:100%;margin-top:16px" onclick="goReveal()">
+      ⚡ 戦闘力を計測！
+    </button>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: POWER REVEAL ===================== -->
+<div class="screen" id="s-reveal">
+  <div class="reveal-wrap">
+    <h2 style="text-align:center;margin-bottom:4px">⚡ 戦闘力 計測中…</h2>
+    <p style="text-align:center;color:#666;font-size:0.82em;margin-bottom:24px">名字の希少度データを解析しています</p>
+    <div id="revealCards"></div>
+    <div id="totalRow" style="display:none;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.2);border-radius:14px;padding:18px;margin-top:16px;text-align:center">
+      <div style="color:#ffd700;font-size:0.82em;margin-bottom:10px;letter-spacing:2px">チーム 総合戦闘力</div>
+      <div style="display:flex;justify-content:center;gap:28px;align-items:center">
+        <div>
+          <div id="tot1name" class="c-red" style="font-weight:bold"></div>
+          <div id="tot1val" class="c-red" style="font-size:1.6em;font-weight:900;font-family:'Courier New',monospace"></div>
+        </div>
+        <div class="c-gold" style="font-size:1.4em">VS</div>
+        <div>
+          <div id="tot2name" class="c-blue" style="font-weight:bold"></div>
+          <div id="tot2val" class="c-blue" style="font-size:1.6em;font-weight:900;font-family:'Courier New',monospace"></div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-gold" id="battleStartBtn" style="display:none" onclick="goBattle()">
+        ⚔️ バトル開始！
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: BATTLE ===================== -->
+<div class="screen" id="s-battle">
+  <div class="battle-wrap">
+    <div style="color:#ffd700;font-size:1.6em;font-weight:900;letter-spacing:3px;margin-bottom:16px">⚔️ バトル ⚔️</div>
+
+    <div class="teams-row">
+      <div class="team-box t1" id="tbox1">
+        <div class="team-box-name c-red" id="bn1"></div>
+        <div class="team-box-power c-red" id="bp1">0</div>
+        <div class="c-gray" style="font-size:0.75em;margin-top:2px">戦闘力</div>
+        <div class="hp-wrap">
+          <div class="hp-bar-bg"><div class="hp-bar-fill hp-fill-t1" id="hpBar1" style="width:100%"></div></div>
+          <div class="hp-label">HP <span id="hpNum1">100</span>%</div>
+        </div>
+      </div>
+
+      <div class="vs-badge">VS</div>
+
+      <div class="team-box t2" id="tbox2">
+        <div class="team-box-name c-blue" id="bn2"></div>
+        <div class="team-box-power c-blue" id="bp2">0</div>
+        <div class="c-gray" style="font-size:0.75em;margin-top:2px">戦闘力</div>
+        <div class="hp-wrap">
+          <div class="hp-bar-bg"><div class="hp-bar-fill hp-fill-t2" id="hpBar2" style="width:100%"></div></div>
+          <div class="hp-label">HP <span id="hpNum2">100</span>%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="battle-log" id="blogEl"></div>
+
+    <div style="margin-top:16px">
+      <button class="btn btn-gold" id="nextRndBtn" onclick="doRound()" style="display:none">
+        次のターン →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: VICTORY ===================== -->
+<div class="screen" id="s-victory">
+  <div class="victory-wrap">
+    <div style="font-size:2.2em;margin-bottom:10px">🏆</div>
+    <div class="victory-title" id="vicTitle"></div>
+    <div style="margin-top:14px;color:#aaa;font-size:1em" id="vicSub"></div>
+    <div class="final-table" id="finalTable"></div>
+    <div style="margin-top:10px;color:#555;font-size:0.82em" id="vicDetail"></div>
+    <button class="btn btn-gold" style="margin-top:28px" onclick="resetGame()">🔄 もう一度！</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  全国苗字ランキング（順位が大きい = 珍しい = 戦闘力高）
+//  データ出典: 全国電話帳・住民基本台帳等に基づく公開統計
+// ============================================================
+const RANKS = {
+  '佐藤':1,'鈴木':2,'高橋':3,'田中':4,'伊藤':5,
+  '渡辺':6,'渡邊':6,'山本':7,'中村':8,'小林':9,'加藤':10,
+  '吉田':11,'山田':12,'佐々木':13,'山口':14,'松本':15,
+  '井上':16,'木村':17,'林':18,'斉藤':19,'斎藤':19,'清水':20,
+  '山崎':21,'山﨑':21,'阿部':22,'安部':23,'森':24,'池田':25,
+  '橋本':26,'山下':27,'石川':28,'中島':29,'前田':30,
+  '藤田':31,'後藤':32,'小川':33,'岡田':34,'長谷川':35,
+  '村上':36,'近藤':37,'石田':38,'坂本':39,'遠藤':40,
+  '青木':41,'藤井':42,'西村':43,'福田':44,'太田':45,
+  '三浦':46,'岡本':47,'松田':48,'中川':49,'中野':50,
+  '原田':51,'小野':52,'田村':53,'竹内':54,'金子':55,
+  '和田':56,'中山':57,'藤原':58,'石井':59,'上田':60,
+  '森田':61,'原':62,'柴田':63,'酒井':64,'工藤':65,
+  '横山':66,'宮崎':67,'宮本':68,'内田':69,'高木':70,
+  '安藤':71,'島田':72,'谷口':73,'大野':74,'高田':75,
+  '丸山':76,'今井':77,'河野':78,'藤本':79,'村田':80,
+  '武田':81,'上野':82,'杉山':83,'松井':84,'菊地':85,'菊池':85,
+  '増田':86,'小島':87,'大塚':88,'千葉':89,'久保':90,
+  '野口':91,'松尾':92,'北村':93,'市川':94,'大西':95,
+  '菅原':96,'渡部':97,'西田':98,'野村':99,'辻':100,
+  '大谷':101,'永田':102,'浜田':103,'西川':104,'小松':105,
+  '木下':106,'長田':107,'平野':108,'川口':109,'川島':110,
+  '秋山':111,'小山':112,'横田':113,'黒田':114,'吉川':115,
+  '土屋':116,'川村':117,'内藤':118,'桜井':119,'大橋':120,
+  '本田':121,'伊東':122,'岩田':123,'金田':124,'山内':125,
+  '田口':126,'服部':127,'森本':128,'安田':129,'浅野':130,
+  '石原':131,'矢野':132,'飯田':133,'松村':134,'神田':135,
+  '川田':136,'北川':137,'菅野':138,'三宅':139,'熊谷':140,
+  '平井':141,'藤沢':142,'杉田':143,'小田':144,'荒木':145,
+  '新井':146,'村井':147,'中西':148,'高野':149,'岩崎':150,
+  '根本':151,'坂口':152,'須藤':153,'泉':154,'児玉':155,
+  '関口':156,'片山':157,'牧野':158,'新谷':159,'北野':160,
+  '大沢':161,'谷川':162,'丹羽':163,'堀田':164,'小沢':165,
+  '佐野':166,'長島':167,'奥野':168,'田島':169,'富田':170,
+  '吉岡':171,'竹田':172,'中田':173,'植田':174,'平田':175,
+  '辻本':176,'飯島':177,'永井':178,'古川':179,'上原':180,
+  '宮田':181,'大久保':182,'堀':183,'角田':184,'野田':185,
+  '岡崎':186,'坂田':187,'吉本':188,'津田':189,'水谷':190,
+  '片岡':191,'大石':192,'岡村':193,'松岡':194,'栗原':195,
+  '柳':196,'長尾':197,'小池':198,'土井':199,'浜野':200,
+  // 歴史的・珍しい名字
+  '望月':280,'真田':320,'上杉':450,'毛利':520,'島津':600,
+  '武蔵':900,'徳川':1500,'織田':800,'豊臣':2000,'伊達':500,
+  '北条':700,'足利':1200,'今川':950,'浅井':750,'朝倉':850,
+  '九条':1600,'大友':1100,'長宗我部':3500,'南部':600,'津軽':1300,
+  '蒲生':1800,'尼子':2800,'大谷':101,'雨宮':1400,'西条':900,
+  '百地':2200,'蜂須賀':4000,'可児':5000,'仙石':3000,'羽柴':8000,
+  // 一字苗字（珍しめ）
+  '星':400,'月':2800,'空':3500,'海':4200,'山':450,
+  '川':550,'木':620,'田':190,'石':290,'橋':380,
+  '谷':520,'野':340,'沢':480,'池':460,'森':24,
+  '花':800,'鬼':6000,'龍':5000,'神':2000,'風':3200,
+  // その他よく使われる苗字
+  '荒川':240,'花田':330,'吉野':260,'尾崎':310,'松下':230,
+  '樋口':270,'河合':300,'山岸':350,'鎌田':380,'角':700,
+  '辻井':600,'末永':900,'小笠原':1500,'鍋島':2500,'細川':1200,
+  '黒木':400,'白石':350,'赤松':600,'青柳':550,'緑川':700,
+  '水上':500,'水島':480,'水口':550,'水田':380,'水谷':190,
+  '春田':600,'夏井':800,'秋田':700,'冬木':1200,
+};
+
+// ============================================================
+//  戦闘力計算 (希少 = 強い)
+//  formula: power = round(C * rank^0.65) + small random
+// ============================================================
+function calcPower(surname) {
+  const trimmed = surname.trim();
+  const rank = RANKS[trimmed];
+  if (rank) {
+    const base = Math.round(800 * Math.pow(rank, 0.65));
+    const rand = Math.floor(Math.random() * base * 0.12);
+    return { power: base + rand, rank, known: true };
+  } else {
+    // データ未登録 = 超希少苗字
+    const mystRank = 2000 + Math.floor(Math.random() * 18000);
+    const base = Math.round(800 * Math.pow(mystRank, 0.65));
+    const bonus = Math.floor(Math.random() * 30000);
+    return { power: base + bonus, rank: null, known: false };
+  }
+}
+
+// ============================================================
+//  ゲーム状態
+// ============================================================
+let G = {
+  cnt: 3, t1name:'チーム赤', t2name:'チーム青',
+  t1mem:[], t2mem:[],
+  t1data:[], t2data:[],
+  t1total:0, t2total:0,
+};
+let hp1=100, hp2=100;
+let rounds=[], roundIdx=0;
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function fmt(n){return n.toLocaleString()}
+function flash(intensity=0.25){
+  const el=document.getElementById('flash');
+  el.style.opacity=intensity;
+  setTimeout(()=>el.style.opacity=0,120);
+}
+function shake(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400)}
+
+// ============================================================
+//  SETUP
+// ============================================================
+function chgCnt(d){
+  G.cnt=Math.max(1,Math.min(6,G.cnt+d));
+  document.getElementById('cntDisp').textContent=G.cnt;
+}
+
+function buildInputs(containerId, prefix, count){
+  const c=document.getElementById(containerId);
+  c.innerHTML='';
+  for(let i=0;i<count;i++){
+    c.innerHTML+=`<div class="member-row">
+      <span class="member-idx">第${i+1}員</span>
+      <input type="text" id="${prefix}${i}" placeholder="例：佐藤" maxlength="12">
+    </div>`;
+  }
+}
+
+function goInput(team){
+  if(team===1){
+    G.t1name=document.getElementById('t1name').value||'チーム赤';
+    G.t2name=document.getElementById('t2name').value||'チーム青';
+    document.getElementById('t1nameH').textContent=G.t1name;
+    buildInputs('t1inputs','i1_',G.cnt);
+    show('s-t1input');
+    document.getElementById('i1_0').focus();
+  } else {
+    // collect team1
+    G.t1mem=[];
+    for(let i=0;i<G.cnt;i++){
+      G.t1mem.push(document.getElementById(`i1_${i}`).value.trim()||`メンバー${i+1}`);
+    }
+    document.getElementById('t2nameH').textContent=G.t2name;
+    buildInputs('t2inputs','i2_',G.cnt);
+    show('s-t2input');
+    document.getElementById('i2_0').focus();
+  }
+}
+
+// ============================================================
+//  POWER REVEAL
+// ============================================================
+async function goReveal(){
+  // collect team2
+  G.t2mem=[];
+  for(let i=0;i<G.cnt;i++){
+    G.t2mem.push(document.getElementById(`i2_${i}`).value.trim()||`メンバー${i+1}`);
+  }
+
+  // calculate powers
+  G.t1data = G.t1mem.map(n=>({name:n,...calcPower(n)}));
+  G.t2data = G.t2mem.map(n=>({name:n,...calcPower(n)}));
+  G.t1total = G.t1data.reduce((s,m)=>s+m.power,0);
+  G.t2total = G.t2data.reduce((s,m)=>s+m.power,0);
+
+  const container=document.getElementById('revealCards');
+  container.innerHTML='';
+  show('s-reveal');
+
+  // build all cards (t1 and t2 interleaved)
+  const all=[];
+  for(let i=0;i<G.cnt;i++){
+    all.push({...G.t1data[i],team:1});
+    all.push({...G.t2data[i],team:2});
+  }
+
+  for(const m of all){
+    const isT1=m.team===1;
+    const col=isT1?'#ff6b6b':'#6b9eff';
+    const tname=isT1?G.t1name:G.t2name;
+    const div=document.createElement('div');
+    div.className='power-card';
+    div.style.borderLeft=`3px solid ${col}`;
+    div.id=`pc_${m.name}_${m.team}`;
+    div.innerHTML=`
+      <div>
+        <div class="pc-name">${m.name}</div>
+        <div class="pc-team" style="color:${col}">${tname}</div>
+        <div class="pc-rank" id="pc_rank_${m.name}_${m.team}"></div>
+      </div>
+      <div class="pc-power" id="pc_pow_${m.name}_${m.team}" style="color:#555">???</div>
+    `;
+    container.appendChild(div);
+  }
+
+  // reveal one by one
+  for(const m of all){
+    await revealOne(m);
+    await sleep(280);
+  }
+
+  // show totals
+  document.getElementById('tot1name').textContent=G.t1name;
+  document.getElementById('tot2name').textContent=G.t2name;
+  document.getElementById('tot1val').textContent=fmt(G.t1total);
+  document.getElementById('tot2val').textContent=fmt(G.t2total);
+  document.getElementById('totalRow').style.display='block';
+  document.getElementById('battleStartBtn').style.display='inline-block';
+}
+
+async function revealOne(m){
+  const card=document.getElementById(`pc_${m.name}_${m.team}`);
+  const powEl=document.getElementById(`pc_pow_${m.name}_${m.team}`);
+  const rankEl=document.getElementById(`pc_rank_${m.name}_${m.team}`);
+
+  card.classList.add('active');
+  flash(0.15);
+
+  const target=m.power;
+  const steps=28, dur=1100;
+  for(let i=0;i<steps;i++){
+    const t=i/steps;
+    const eased=1-Math.pow(1-t,2.5);
+    const cur=Math.floor(eased*target*0.88+Math.random()*target*0.18);
+    powEl.textContent=fmt(cur);
+    powEl.style.color='#ffd700';
+    await sleep(dur/steps);
+  }
+  powEl.textContent=fmt(target);
+
+  if(m.known){
+    rankEl.textContent=`全国第 ${m.rank} 位`;
+    rankEl.style.color='#666';
+  } else {
+    rankEl.textContent='🔮 超希少苗字！ランク外';
+    rankEl.style.color='#cc88ff';
+    powEl.style.textShadow='0 0 14px #ffd700';
+  }
+  card.classList.remove('active');
+}
+
+// ============================================================
+//  BATTLE ENGINE
+// ============================================================
+const MOVES=[
+  '烈火の拳','雷撃波','龍の咆哮','真空波動','覇王斬',
+  '天翔龍閃','鬼神の爪','奥義・爆裂破','極限必殺技',
+  '名字パワー全開！','究極奥義・苗字砲！','滅却之型・壱ノ型',
+  '名字解放奥義','先祖代々の力！','家名の誇り・解放！'
+];
+const CRITS=['クリティカルヒット！！','必殺！！','会心の一撃！！'];
+
+function buildRounds(){
+  rounds=[];
+  const NROUNDS=Math.min(G.cnt*2+1, 7);
+  let h1=100,h2=100;
+  const p1=G.t1total, p2=G.t2total, ptotal=p1+p2;
+
+  for(let r=0;r<NROUNDS;r++){
+    // pick attacker from each team based on round robin
+    const a1idx=r%G.cnt, a2idx=r%G.cnt;
+    const a1=G.t1data[a1idx], a2=G.t2data[a2idx];
+
+    // who wins this exchange? probability weighted by individual power
+    const rnd=Math.random();
+    const p1wins=rnd < (a1.power/(a1.power+a2.power))*0.75 + 0.15;
+    const crit=Math.random()<0.18;
+
+    const dmgBase=12+Math.floor(Math.random()*15);
+    const dmgMult=crit?1.8:1.0;
+    const dmg=Math.round(dmgBase*dmgMult);
+
+    let h1delta=0,h2delta=0;
+    if(p1wins){
+      h2delta=-dmg;
+      h1delta=-Math.floor(dmg*0.3);
+    } else {
+      h1delta=-dmg;
+      h2delta=-Math.floor(dmg*0.3);
+    }
+    h1=Math.max(5,h1+h1delta);
+    h2=Math.max(5,h2+h2delta);
+
+    const mv=MOVES[Math.floor(Math.random()*MOVES.length)];
+    const critStr=crit?` ${CRITS[Math.floor(Math.random()*CRITS.length)]}`:'';
+    rounds.push({r:r+1,p1wins,a1:a1.name,a2:a2.name,move:mv,dmg,crit,critStr,h1delta,h2delta,newH1:h1,newH2:h2});
+  }
+}
+
+function goBattle(){
+  hp1=100; hp2=100; roundIdx=0;
+  buildRounds();
+
+  document.getElementById('bn1').textContent=G.t1name;
+  document.getElementById('bn2').textContent=G.t2name;
+  document.getElementById('bp1').textContent=fmt(G.t1total);
+  document.getElementById('bp2').textContent=fmt(G.t2total);
+  setHp(1,100); setHp(2,100);
+
+  document.getElementById('blogEl').innerHTML='';
+  show('s-battle');
+
+  setTimeout(()=>{
+    bLog(`⚔️ バトル開始！`,'#ffd700');
+    bLog(`${G.t1name}の総合戦闘力: ${fmt(G.t1total)}`,'#ff6b6b');
+    bLog(`${G.t2name}の総合戦闘力: ${fmt(G.t2total)}`,'#6b9eff');
+    bLog('─────────────────────────','#333');
+    document.getElementById('nextRndBtn').style.display='inline-block';
+  },400);
+}
+
+function setHp(team, val){
+  val=Math.max(0,Math.min(100,val));
+  document.getElementById(`hpBar${team}`).style.width=val+'%';
+  document.getElementById(`hpNum${team}`).textContent=val;
+}
+
+function bLog(text,color='#ccc'){
+  const el=document.getElementById('blogEl');
+  const d=document.createElement('div');
+  d.className='log-line';
+  d.style.color=color;
+  d.textContent=text;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+function doRound(){
+  if(roundIdx>=rounds.length){endBattle();return;}
+  const rd=rounds[roundIdx++];
+
+  bLog(`\n📍 ラウンド ${rd.r}`,'#ffd700');
+
+  setTimeout(()=>{
+    if(rd.p1wins){
+      bLog(`💥 ${rd.a1}「${rd.move}！」${rd.critStr}`,'#ff6b6b');
+      setTimeout(()=>{
+        bLog(`→ ${G.t2name}に ${rd.dmg}ダメージ！  (${G.t1name}も ${Math.abs(rd.h1delta)}ダメージ)`,'#ccc');
+        hp1=rd.newH1; hp2=rd.newH2;
+        setHp(1,hp1); setHp(2,hp2);
+        flash(0.2);
+        shake(document.getElementById('tbox2'));
+      },500);
+    } else {
+      bLog(`💥 ${rd.a2}「${rd.move}！」${rd.critStr}`,'#6b9eff');
+      setTimeout(()=>{
+        bLog(`→ ${G.t1name}に ${rd.dmg}ダメージ！  (${G.t2name}も ${Math.abs(rd.h2delta)}ダメージ)`,'#ccc');
+        hp1=rd.newH1; hp2=rd.newH2;
+        setHp(1,hp1); setHp(2,hp2);
+        flash(0.2);
+        shake(document.getElementById('tbox1'));
+      },500);
+    }
+
+    if(roundIdx>=rounds.length){
+      setTimeout(()=>{
+        document.getElementById('nextRndBtn').textContent='⚔️ 決着！';
+      },700);
+    }
+  },300);
+}
+
+function endBattle(){
+  document.getElementById('nextRndBtn').style.display='none';
+  // winner: HP first, then total power
+  let winner, loser, wPow, lPow;
+  if(hp1>hp2){winner=G.t1name;loser=G.t2name;wPow=G.t1total;lPow=G.t2total;}
+  else if(hp2>hp1){winner=G.t2name;loser=G.t1name;wPow=G.t2total;lPow=G.t1total;}
+  else if(G.t1total>=G.t2total){winner=G.t1name;loser=G.t2name;wPow=G.t1total;lPow=G.t2total;}
+  else{winner=G.t2name;loser=G.t1name;wPow=G.t2total;lPow=G.t1total;}
+
+  setTimeout(()=>goVictory(winner,loser,wPow,lPow),1200);
+}
+
+// ============================================================
+//  VICTORY
+// ============================================================
+function goVictory(winner,loser,wPow,lPow){
+  const isT1=winner===G.t1name;
+  const col=isT1?'#ff6b6b':'#6b9eff';
+
+  document.getElementById('vicTitle').textContent=`🏆 ${winner} の勝利！`;
+  document.getElementById('vicTitle').style.color=col;
+  document.getElementById('vicSub').textContent=`名字の力で ${loser} を完全に圧倒！`;
+
+  const diff=Math.abs(wPow-lPow);
+  const ratio=(wPow/lPow*100).toFixed(1);
+  document.getElementById('vicDetail').textContent=
+    `戦闘力差: ${fmt(diff)}  |  比率: ${ratio}%`;
+
+  document.getElementById('finalTable').innerHTML=`
+    <div class="final-col">
+      <div class="final-col-name" style="color:#ff6b6b">${G.t1name}</div>
+      <div class="final-col-power" style="color:#ff6b6b">${fmt(G.t1total)}</div>
+    </div>
+    <div class="c-gold" style="font-size:1.3em">VS</div>
+    <div class="final-col">
+      <div class="final-col-name" style="color:#6b9eff">${G.t2name}</div>
+      <div class="final-col-power" style="color:#6b9eff">${fmt(G.t2total)}</div>
+    </div>
+  `;
+
+  show('s-victory');
+  startFireworks(col);
+}
+
+// ============================================================
+//  FIREWORKS (Canvas)
+// ============================================================
+let fwAnim=null;
+const particles=[];
+
+function startFireworks(mainCol){
+  const canvas=document.getElementById('fwCanvas');
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d');
+
+  function spawnBurst(){
+    const cx=Math.random()*canvas.width;
+    const cy=Math.random()*canvas.height*0.6+50;
+    const cols=[mainCol,'#ffd700','#ffffff','#ff88ff','#88ffff'];
+    for(let i=0;i<28;i++){
+      const angle=Math.random()*Math.PI*2;
+      const spd=3+Math.random()*6;
+      particles.push({
+        x:cx,y:cy,
+        vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd-2,
+        life:1,decay:0.015+Math.random()*0.01,
+        size:3+Math.random()*4,
+        col:cols[Math.floor(Math.random()*cols.length)]
+      });
+    }
+  }
+
+  let burstTimer=0;
+  function frame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    burstTimer++;
+    if(burstTimer%40===0) spawnBurst();
+
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.12;
+      p.life-=p.decay;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=p.life;
+      ctx.fillStyle=p.col;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    fwAnim=requestAnimationFrame(frame);
+  }
+  if(fwAnim) cancelAnimationFrame(fwAnim);
+  particles.length=0;
+  spawnBurst();
+  frame();
+}
+
+function stopFireworks(){
+  if(fwAnim){cancelAnimationFrame(fwAnim);fwAnim=null;}
+  const canvas=document.getElementById('fwCanvas');
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  particles.length=0;
+}
+
+// ============================================================
+//  RESET
+// ============================================================
+function resetGame(){
+  stopFireworks();
+  G={cnt:3,t1name:'チーム赤',t2name:'チーム青',t1mem:[],t2mem:[],t1data:[],t2data:[],t1total:0,t2total:0};
+  document.getElementById('t1name').value='チーム赤';
+  document.getElementById('t2name').value='チーム青';
+  document.getElementById('cntDisp').textContent=3;
+  show('s-title');
+}
+
+// ============================================================
+//  STARS (background)
+// ============================================================
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<80;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz=Math.random()*2.5+0.5;
+    s.style.cssText=`
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${sz}px;height:${sz}px;
+      --d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;
+    `;
+    c.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>
